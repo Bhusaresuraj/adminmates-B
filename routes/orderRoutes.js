@@ -13,7 +13,8 @@ const {
     getOrderById,
     getVendorOrders,
     approveVendorOrder,
-    rejectVendorOrder
+    rejectVendorOrder,
+    adminRejectOrder
 } = require('../controllers/orderController');
 const { protect, authorize, authorizeCompanyUser, authorizeCompanyRole } = require('../middleware/authMiddleware');
 
@@ -81,6 +82,10 @@ router.put('/admin/my-orders/:orderId/approve', authorize('admin', 'sub-admin'),
 
 // @route   PUT /api/orders/admin/my-orders/:orderId/reject
 router.put('/admin/my-orders/:orderId/reject', authorize('admin', 'sub-admin'), rejectVendorOrder);
+
+// @route   PUT /api/orders/admin/:orderId/reject-order
+// @desc    Admin explicitly rejects any global order
+router.put('/admin/:orderId/reject-order', authorize('admin', 'sub-admin'), adminRejectOrder);
 
 // Routes accessible by both admin/sub-admin and company users
 // @route   GET /api/orders

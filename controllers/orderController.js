@@ -5,6 +5,7 @@ const CompanyUser = require('../models/CompanyUser');
 const Product = require('../models/Product');
 const razorpayInstance = require('../config/razorpay');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 // @desc    Place order from cart
 // @route   POST /api/orders/place
@@ -1398,6 +1399,14 @@ exports.rejectVendorOrder = async (req, res) => {
             });
         }
 
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid order ID format'
+            });
+        }
+
         const order = await Order.findById(orderId);
 
         if (!order) {
@@ -1446,6 +1455,63 @@ exports.rejectVendorOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Reject vendor order error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Reject any order globally (Admin only)
+// @route   PUT /api/orders/admin/:orderId/reject-order
+// @access  Private/Admin, Sub-Admin
+exports.adminRejectOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { rejectionReason } = req.body;
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a rejection reason'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        if (['delivered', 'cancelled', 'rejected'].includes(order.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Order cannot be rejected because it is already ${order.status}`
+            });
+        }
+
+        order.status = 'rejected';
+        order.rejectionReason = rejectionReason;
+
+        // Also update vendor status if it was pending
+        if (order.vendorApprovalStatus === 'pending') {
+            order.vendorApprovalStatus = 'rejected';
+            order.vendorRejectionReason = `Rejected by Admin: ${rejectionReason}`;
+        }
+
+        await order.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Order rejected successfully',
+            data: order
+        });
+    } catch (error) {
+        console.error('Admin reject order error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',
