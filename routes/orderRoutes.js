@@ -15,7 +15,7 @@ const {
     approveVendorOrder,
     rejectVendorOrder
 } = require('../controllers/orderController');
-const { protect, authorizeCompanyUser, authorizeCompanyRole } = require('../middleware/authMiddleware');
+const { protect, authorize, authorizeCompanyUser, authorizeCompanyRole } = require('../middleware/authMiddleware');
 
 // Protected routes that require authentication
 router.use(protect);

@@ -167,7 +167,6 @@ const productSchema = new mongoose.Schema({
 // Index for better query performance
 productSchema.index({ vendor: 1, status: 1, approvalStatus: 1 });
 productSchema.index({ category: 1, subCategory: 1, price: 1 });
-productSchema.index({ sku: 1 });
 productSchema.index({ productName: 'text', description: 'text', brand: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);
