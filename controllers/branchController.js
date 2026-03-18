@@ -157,8 +157,11 @@ exports.getMyBranches = async (req, res) => {
     try {
         const { status, page = 1, limit = 10 } = req.query;
 
-        // Build filter for company user's company
-        const filter = { company: req.user.companyId };
+        // Build filter
+        const filter = {};
+        if (req.user.role !== 'admin') {
+            filter.company = req.user.companyId;
+        }
 
         
         if (status && ['pending', 'approved', 'rejected'].includes(status)) {
@@ -224,13 +227,14 @@ exports.getMyBranches = async (req, res) => {
 // @access  Private/Company Super-Admin, Admin
 exports.getBranchStats = async (req, res) => {
     try {
+        const filter = req.user.role === 'admin' ? {} : { company: req.user.companyId };
         const stats = {
-            total: await Branch.countDocuments({ company: req.user.companyId }),
-            pending: await Branch.countDocuments({ company: req.user.companyId, approvalStatus: 'pending' }),
-            approved: await Branch.countDocuments({ company: req.user.companyId, approvalStatus: 'approved' }),
-            rejected: await Branch.countDocuments({ company: req.user.companyId, approvalStatus: 'rejected' }),
-            active: await Branch.countDocuments({ company: req.user.companyId, isActive: true, approvalStatus: 'approved' }),
-            inactive: await Branch.countDocuments({ company: req.user.companyId, isActive: false })
+            total: await Branch.countDocuments(filter),
+            pending: await Branch.countDocuments({ ...filter, approvalStatus: 'pending' }),
+            approved: await Branch.countDocuments({ ...filter, approvalStatus: 'approved' }),
+            rejected: await Branch.countDocuments({ ...filter, approvalStatus: 'rejected' }),
+            active: await Branch.countDocuments({ ...filter, isActive: true, approvalStatus: 'approved' }),
+            inactive: await Branch.countDocuments({ ...filter, isActive: false })
         };
 
         res.status(200).json({
@@ -254,10 +258,13 @@ exports.getBranchById = async (req, res) => {
     try {
         const { branchId } = req.params;
 
-        const branch = await Branch.findOne({ 
-            _id: branchId, 
-            company: req.user.companyId 
-        }).populate('approvedBy', 'name email')
+        const query = { _id: branchId };
+        if (req.user.role !== 'admin') {
+            query.company = req.user.companyId;
+        }
+
+        const branch = await Branch.findOne(query)
+          .populate('approvedBy', 'name email')
           .populate({
               path: 'branchAdmin',
               select: 'name email role isActive branch',
@@ -300,7 +307,7 @@ exports.updateBranch = async (req, res) => {
 
         // Find branch
         const query = { _id: branchId };
-        if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+        if (req.user.role !== 'admin') {
             query.company = req.user.companyId;
         }
         const branch = await Branch.findOne(query);
@@ -337,7 +344,7 @@ exports.updateBranch = async (req, res) => {
                 });
             }
 
-            if (branchAdmin.company.toString() !== req.user.companyId.toString()) {
+            if (branchAdmin.company.toString() !== branch.company.toString()) {
                 return res.status(403).json({
                     success: false,
                     message: 'Branch admin must belong to the same company'
@@ -352,6 +359,10 @@ exports.updateBranch = async (req, res) => {
             }
 
             branch.branchAdmin = branchAdminId;
+            
+            // Also update the branchAdmin's branch field in CompanyUser model
+            branchAdmin.branch = branchId;
+            await branchAdmin.save();
         }
 
         await branch.save();
@@ -398,10 +409,11 @@ exports.assignBranchAdmin = async (req, res) => {
         }
 
         // Find branch
-        const branch = await Branch.findOne({ 
-            _id: branchId, 
-            company: req.user.companyId 
-        });
+        const query = { _id: branchId };
+        if (req.user.role !== 'admin') {
+            query.company = req.user.companyId;
+        }
+        const branch = await Branch.findOne(query);
 
         if (!branch) {
             return res.status(404).json({
@@ -420,7 +432,7 @@ exports.assignBranchAdmin = async (req, res) => {
         }
 
         // Verify branch admin belongs to the same company
-        if (branchAdmin.company.toString() !== req.user.companyId.toString()) {
+        if (branchAdmin.company.toString() !== branch.company.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Branch admin must belong to the same company'
