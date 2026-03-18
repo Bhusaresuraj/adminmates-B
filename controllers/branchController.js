@@ -319,13 +319,13 @@ exports.updateBranch = async (req, res) => {
             });
         }
 
-        // Only allow updates for pending branches (Admins can bypass this)
-        if (req.user.role !== 'admin' && branch.approvalStatus !== 'pending') {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot update branch. Only pending branches can be updated.'
-            });
-        }
+        // Removed the restriction so that companies can edit their branches even after they are approved.
+        // if (req.user.role !== 'admin' && branch.approvalStatus !== 'pending') {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: 'Cannot update branch. Only pending branches can be updated.'
+        //     });
+        // }
 
         // Update fields
         if (branchName) branch.branchName = branchName;
