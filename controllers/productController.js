@@ -96,8 +96,8 @@ exports.createProduct = async (req, res) => {
 
         // Allow Admin to provide a specific vendorId or leave blank for Admin-owned products
         let finalVendorId = req.user.id;
-        if (req.user.role === 'admin' || req.user.role === 'super-admin') {
-            finalVendorId = req.body.vendorId || null;
+        if (['admin', 'super-admin', 'sub-admin'].includes(req.user.role)) {
+            finalVendorId = req.body.vendorId || req.user.id;
         }
 
         // Create product
@@ -190,8 +190,9 @@ exports.updateProduct = async (req, res) => {
             });
         }
 
-        // Check if vendor owns this product
-        if (product.vendor.toString() !== req.user.id) {
+        // Check if vendor owns this product (Admins can bypass)
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (!isAdmin && product.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to update this product'
@@ -330,8 +331,9 @@ exports.deleteProduct = async (req, res) => {
             });
         }
 
-        // Check if vendor owns this product
-        if (product.vendor.toString() !== req.user.id) {
+        // Check if vendor owns this product (Admins can bypass)
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (!isAdmin && product.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to delete this product'
@@ -597,8 +599,9 @@ exports.toggleProductStatus = async (req, res) => {
             });
         }
 
-        // Check if vendor owns this product
-        if (product.vendor.toString() !== req.user.id) {
+        // Check if vendor owns this product (Admins can bypass)
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (!isAdmin && product.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to modify this product'
