@@ -72,6 +72,16 @@ router.put('/vendor/:orderId/approve', approveVendorOrder);
 // @access  Private/Vendor
 router.put('/vendor/:orderId/reject', rejectVendorOrder);
 
+// Admin Direct Sales specific routes (Separated from Vendor flow)
+// @route   GET /api/orders/admin/my-orders
+router.get('/admin/my-orders', authorize('admin', 'sub-admin'), getVendorOrders);
+
+// @route   PUT /api/orders/admin/my-orders/:orderId/approve
+router.put('/admin/my-orders/:orderId/approve', authorize('admin', 'sub-admin'), approveVendorOrder);
+
+// @route   PUT /api/orders/admin/my-orders/:orderId/reject
+router.put('/admin/my-orders/:orderId/reject', authorize('admin', 'sub-admin'), rejectVendorOrder);
+
 // Routes accessible by both admin/sub-admin and company users
 // @route   GET /api/orders
 // @desc    Get all orders with filters (role-based filtering applied in controller)

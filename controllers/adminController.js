@@ -1144,3 +1144,50 @@ exports.getDashboardStats = async (req, res) => {
         });
     }
 };
+
+// @desc    Get Admin's direct sales dashboard statistics
+// @route   GET /api/admin/my-store/dashboard
+// @access  Private/Admin, Sub-admin
+exports.getAdminStoreStats = async (req, res) => {
+    try {
+        const adminId = req.user.id;
+
+        const productStats = {
+            total: await Product.countDocuments({ vendor: adminId }),
+            active: await Product.countDocuments({ vendor: adminId, status: 'active' })
+        };
+
+        const orderStats = {
+            total: await Order.countDocuments({ vendor: adminId }),
+            pending: await Order.countDocuments({ vendor: adminId, vendorApprovalStatus: 'pending' }),
+            approved: await Order.countDocuments({ vendor: adminId, vendorApprovalStatus: 'approved' }),
+            delivered: await Order.countDocuments({ vendor: adminId, status: 'delivered' })
+        };
+
+        const challanStats = {
+            total: await DeliveryChallan.countDocuments({ vendor: adminId })
+        };
+
+        const revenueAgg = await Order.aggregate([
+            { $match: { vendor: req.user._id, 'payment.paymentStatus': 'completed' } },
+            { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                products: productStats,
+                orders: orderStats,
+                deliveryChallans: challanStats,
+                totalRevenue: revenueAgg.length > 0 ? revenueAgg[0].totalRevenue : 0
+            }
+        });
+    } catch (error) {
+        console.error('Get admin store stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

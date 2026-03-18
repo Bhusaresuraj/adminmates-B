@@ -21,6 +21,9 @@ router.get('/', optionalAuth, getAllProducts);
 // Get My Products route (specifically for logged-in user's own products)
 router.get('/my-products', protect, authorize('vendor', 'admin', 'sub-admin', 'super-admin'), getMyProducts);
 
+// Admin Direct Sales specific route for products
+router.get('/admin/my-products', protect, authorize('admin', 'sub-admin'), getMyProducts);
+
 // Statistics routes - accessible by vendors (own stats) and admins (all stats)
 router.get('/stats', protect, authorize('vendor', 'admin', 'sub-admin'), getProductStats);
 

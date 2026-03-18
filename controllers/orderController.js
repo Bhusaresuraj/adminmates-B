@@ -1237,8 +1237,9 @@ exports.getVendorOrders = async (req, res) => {
 
         const totalPages = Math.ceil(totalOrders / limitNum);
 
-        // Mask Company & Branch data to protect against client poaching
-        const maskedOrders = orders.map(order => {
+        // Mask Company & Branch data to protect against client poaching (ONLY FOR VENDORS)
+        const isVendor = req.user.role === 'vendor';
+        const finalOrders = isVendor ? orders.map(order => {
             const orderObj = order.toObject ? order.toObject() : order;
             if (orderObj.company) {
                 orderObj.company.name = "Confidential";
@@ -1260,7 +1261,7 @@ exports.getVendorOrders = async (req, res) => {
                 orderObj.orderPlacedBy.email = "Confidential";
             }
             return orderObj;
-        });
+        }) : orders;
 
         res.status(200).json({
             success: true,
@@ -1268,7 +1269,7 @@ exports.getVendorOrders = async (req, res) => {
             totalOrders,
             totalPages,
             currentPage: pageNum,
-            data: maskedOrders,
+            data: finalOrders,
             pagination: {
                 page: pageNum,
                 limit: limitNum,

@@ -21,6 +21,10 @@ router.post('/', createDeliveryChallan);
 // @access  Private/Vendor
 router.get('/vendor/my-challans', getVendorDeliveryChallans);
 
+// @route   GET /api/delivery-challan/admin/my-challans
+// @desc    Get all delivery challans for admin direct sales
+router.get('/admin/my-challans', authorize('admin', 'sub-admin'), getVendorDeliveryChallans);
+
 // @route   GET /api/delivery-challan/all
 // @desc    Get all delivery challans (admin and sub-admin)
 // @access  Private/Admin, Sub-Admin

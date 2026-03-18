@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const SubCategory = require('../models/SubCategory');
 const Order = require('../models/Order'); // Required to aggregate revenue
+const mongoose = require('mongoose');
 const { uploadMultipleImagesToCloudinary, deleteMultipleImagesFromCloudinary } = require('../utils/imageUpload');
 
 // @desc    Create product (Vendor only)
@@ -180,6 +181,14 @@ exports.updateProduct = async (req, res) => {
             removeImages // Array of publicIds to remove
         } = req.body;
 
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+
         // Find product
         const product = await Product.findById(productId);
 
@@ -321,6 +330,14 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
     try {
         const { productId } = req.params;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
 
         const product = await Product.findById(productId);
 
@@ -603,6 +620,14 @@ exports.getProductById = async (req, res) => {
     try {
         const { productId } = req.params;
 
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+
         const product = await Product.findById(productId)
             .populate('vendor', 'name email vendorLocation gstNumber')
             .populate('category', 'name')
@@ -661,6 +686,14 @@ exports.toggleProductStatus = async (req, res) => {
     try {
         const { productId } = req.params;
 
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+
         const product = await Product.findById(productId);
 
         if (!product) {
@@ -709,6 +742,14 @@ exports.approveProduct = async (req, res) => {
     try {
         const { productId } = req.params;
         const { adminCut, adminGst } = req.body; // Admin commission in rupees and admin GST in percentage
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
 
         const product = await Product.findById(productId)
             .populate('vendor', 'name email');
@@ -811,6 +852,14 @@ exports.rejectProduct = async (req, res) => {
     try {
         const { productId } = req.params;
         const { reason } = req.body;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
 
         const product = await Product.findById(productId)
             .populate('vendor', 'name email');

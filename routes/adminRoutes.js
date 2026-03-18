@@ -12,7 +12,8 @@ const {
     rejectBranch,
     toggleBranchStatus,
     getBranchesStats,
-    getDashboardStats
+    getDashboardStats,
+    getAdminStoreStats
 } = require('../controllers/adminController');
 const {
     createCategory,
@@ -28,6 +29,9 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Dashboard route (Admin and Sub-admin)
 router.get('/dashboard', protect, authorize('admin', 'sub-admin'), getDashboardStats);
+
+// Admin Direct Sales Dashboard
+router.get('/my-store/dashboard', protect, authorize('admin', 'sub-admin'), getAdminStoreStats);
 
 // Admin only routes
 router.post('/create-sub-admin', protect, authorize('admin'), createSubAdmin);
