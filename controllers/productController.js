@@ -381,6 +381,7 @@ exports.getAllProducts = async (req, res) => {
             minPrice,
             maxPrice,
             search,
+            myProducts,
             page = 1,
             limit = 10,
             sortBy = 'price' // price, -price, createdAt, -createdAt
@@ -419,7 +420,9 @@ exports.getAllProducts = async (req, res) => {
                 if (approvalStatus && ['pending', 'approved', 'rejected'].includes(approvalStatus)) {
                     filter.approvalStatus = approvalStatus;
                 }
-                if (vendor) {
+                if (myProducts === 'true') {
+                    filter.vendor = req.user.id;
+                } else if (vendor) {
                     filter.vendor = vendor;
                 }
             }
@@ -517,6 +520,74 @@ exports.getAllProducts = async (req, res) => {
         });
     } catch (error) {
         console.error('Get products error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get logged in user's own products
+// @route   GET /api/products/my-products
+// @access  Private/Vendor, Admin, Sub-admin
+exports.getMyProducts = async (req, res) => {
+    try {
+        const { status, approvalStatus, page = 1, limit = 10, search } = req.query;
+
+        // Force filter to ONLY show products created by the logged-in user
+        const filter = { vendor: req.user.id };
+
+        if (status && ['active', 'inactive'].includes(status)) {
+            filter.status = status;
+        }
+        if (approvalStatus && ['pending', 'approved', 'rejected'].includes(approvalStatus)) {
+            filter.approvalStatus = approvalStatus;
+        }
+        if (search) {
+            filter.$or = [
+                { productName: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { brand: { $regex: search, $options: 'i' } },
+                { sku: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
+
+        const totalProducts = await Product.countDocuments(filter);
+
+        const products = await Product.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limitNum)
+            .populate('vendor', 'name email')
+            .populate('category', 'name')
+            .populate('subCategory', 'name')
+            .populate('approvedBy', 'name email');
+
+        const totalPages = Math.ceil(totalProducts / limitNum);
+
+        res.status(200).json({
+            success: true,
+            count: products.length,
+            totalProducts,
+            totalPages,
+            currentPage: pageNum,
+            data: products,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                totalPages,
+                totalRecords: totalProducts,
+                hasNextPage: pageNum < totalPages,
+                hasPrevPage: pageNum > 1
+            }
+        });
+    } catch (error) {
+        console.error('Get my products error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',

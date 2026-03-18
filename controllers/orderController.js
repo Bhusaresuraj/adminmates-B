@@ -1196,11 +1196,12 @@ exports.getVendorOrders = async (req, res) => {
     try {
         const { status, vendorApprovalStatus, page = 1, limit = 10 } = req.query;
 
-        // Check if user is a vendor
-        if (req.user.role !== 'vendor') {
+        // Check if user is a vendor or admin
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (req.user.role !== 'vendor' && !isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied. Only vendors can access this endpoint.'
+                message: 'Access denied. Only vendors and admins can access this endpoint.'
             });
         }
 
@@ -1294,11 +1295,12 @@ exports.approveVendorOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
 
-        // Check if user is a vendor
-        if (req.user.role !== 'vendor') {
+        // Check if user is a vendor or admin
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (req.user.role !== 'vendor' && !isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied. Only vendors can approve orders.'
+                message: 'Access denied. Only vendors and admins can approve orders.'
             });
         }
 
@@ -1313,8 +1315,8 @@ exports.approveVendorOrder = async (req, res) => {
             });
         }
 
-        // Check if this order belongs to this vendor
-        if (order.vendor.toString() !== req.user.id) {
+        // Check if this order belongs to this vendor (admins can bypass or approve their own)
+        if (!isAdmin && order.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to approve this order'
@@ -1386,11 +1388,12 @@ exports.rejectVendorOrder = async (req, res) => {
             });
         }
 
-        // Check if user is a vendor
-        if (req.user.role !== 'vendor') {
+        // Check if user is a vendor or admin
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (req.user.role !== 'vendor' && !isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied. Only vendors can reject orders.'
+                message: 'Access denied. Only vendors and admins can reject orders.'
             });
         }
 
@@ -1403,8 +1406,8 @@ exports.rejectVendorOrder = async (req, res) => {
             });
         }
 
-        // Check if this order belongs to this vendor
-        if (order.vendor.toString() !== req.user.id) {
+        // Check if this order belongs to this vendor (admins can bypass or reject their own)
+        if (!isAdmin && order.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to reject this order'

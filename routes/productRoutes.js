@@ -6,6 +6,7 @@ const {
     updateProduct,
     deleteProduct,
     getAllProducts,
+    getMyProducts,
     getProductById,
     toggleProductStatus,
     approveProduct,
@@ -16,7 +17,12 @@ const { protect, authorize, optionalAuth } = require('../middleware/authMiddlewa
 
 // Public/Authenticated routes (works for both)
 router.get('/', optionalAuth, getAllProducts);
-router.get('/:productId', optionalAuth, getProductById);
+
+// Get My Products route (specifically for logged-in user's own products)
+router.get('/my-products', protect, authorize('vendor', 'admin', 'sub-admin', 'super-admin'), getMyProducts);
+
+// Statistics routes - accessible by vendors (own stats) and admins (all stats)
+router.get('/stats', protect, authorize('vendor', 'admin', 'sub-admin'), getProductStats);
 
 // Vendor routes
 router.post('/', protect, authorize('vendor'), uploadImages.array('images', 10), createProduct);
@@ -24,11 +30,11 @@ router.put('/:productId', protect, authorize('vendor'), uploadImages.array('imag
 router.delete('/:productId', protect, authorize('vendor'), deleteProduct);
 router.put('/:productId/toggle-status', protect, authorize('vendor'), toggleProductStatus);
 
-// Statistics routes - accessible by vendors (own stats) and admins (all stats)
-router.get('/admin/stats', protect, authorize('vendor', 'admin', 'sub-admin'), getProductStats);
-
 // Admin routes
 router.put('/:productId/approve', protect, authorize('admin', 'sub-admin'), approveProduct);
 router.put('/:productId/reject', protect, authorize('admin', 'sub-admin'), rejectProduct);
+
+// Get single product (must be placed at the bottom to prevent catching other valid GET paths)
+router.get('/:productId', optionalAuth, getProductById);
 
 module.exports = router;

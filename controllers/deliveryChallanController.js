@@ -9,11 +9,12 @@ exports.createDeliveryChallan = async (req, res) => {
     try {
         const { orderId, notes } = req.body;
 
-        // Check if user is a vendor
-        if (req.user.role !== 'vendor') {
+        // Check if user is a vendor or admin
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (req.user.role !== 'vendor' && !isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied. Only vendors can create delivery challans.'
+                message: 'Access denied. Only vendors and admins can create delivery challans.'
             });
         }
 
@@ -34,8 +35,8 @@ exports.createDeliveryChallan = async (req, res) => {
             });
         }
 
-        // Check if this order belongs to this vendor
-        if (order.vendor.toString() !== req.user.id) {
+        // Check if this order belongs to this vendor (admins can bypass or act on their own)
+        if (!isAdmin && order.vendor.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to create delivery challan for this order'
@@ -76,7 +77,7 @@ exports.createDeliveryChallan = async (req, res) => {
         // Create delivery challan
         const deliveryChallan = await DeliveryChallan.create({
             order: orderId,
-            vendor: req.user.id,
+            vendor: order.vendor, // Use order's vendor ID instead of purely the requester's ID
             company: order.company,
             items: challanItems,
             subtotal: subtotal,
@@ -163,11 +164,12 @@ exports.getVendorDeliveryChallans = async (req, res) => {
     try {
         const { status, page = 1, limit = 10 } = req.query;
 
-        // Check if user is a vendor
-        if (req.user.role !== 'vendor') {
+        // Check if user is a vendor or admin
+        const isAdmin = ['admin', 'super-admin', 'sub-admin'].includes(req.user.role);
+        if (req.user.role !== 'vendor' && !isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied. Only vendors can access this endpoint.'
+                message: 'Access denied. Only vendors and admins can access this endpoint.'
             });
         }
 
