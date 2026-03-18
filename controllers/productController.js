@@ -931,7 +931,13 @@ exports.getProductStats = async (req, res) => {
                 pending: await Product.countDocuments({ ...filter, approvalStatus: 'pending' }),
                 rejected: await Product.countDocuments({ ...filter, approvalStatus: 'rejected' }),
                 active: await Product.countDocuments({ ...filter, status: 'active' }),
-                inactive: await Product.countDocuments({ ...filter, status: 'inactive' })
+                inactive: await Product.countDocuments({ ...filter, status: 'inactive' }),
+                orders: {
+                    total: await Order.countDocuments({ vendor: req.user.id }),
+                    pending: await Order.countDocuments({ vendor: req.user.id, vendorApprovalStatus: 'pending' }),
+                    approved: await Order.countDocuments({ vendor: req.user.id, vendorApprovalStatus: 'approved' }),
+                    delivered: await Order.countDocuments({ vendor: req.user.id, status: 'delivered' })
+                }
             };
 
             // Aggregate total revenue specifically for this vendor

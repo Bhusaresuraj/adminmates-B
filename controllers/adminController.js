@@ -1096,7 +1096,7 @@ exports.getDashboardStats = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(10)
             .select('orderNumber totalAmount status payment.paymentStatus createdAt')
-            .populate('user', 'name email')
+            .populate('orderedBy', 'name email')
             .populate('company', 'name');
 
         // Recent users (last 10)
