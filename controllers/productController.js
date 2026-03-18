@@ -936,7 +936,15 @@ exports.getProductStats = async (req, res) => {
 
             // Aggregate total revenue specifically for this vendor
             const revenueAggregation = await Order.aggregate([
-                { $match: { vendor: req.user._id, status: 'delivered' } }, // Adjust status match accordingly (e.g., 'completed' or 'delivered')
+                { 
+                    $match: { 
+                        vendor: new mongoose.Types.ObjectId(req.user.id), 
+                        $or: [
+                            { 'payment.paymentStatus': 'completed' },
+                            { status: 'delivered' }
+                        ]
+                    } 
+                },
                 { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
             ]);
             
@@ -969,7 +977,14 @@ exports.getProductStats = async (req, res) => {
 
             // Aggregate global total revenue for Admin
             const adminRevenueAggregation = await Order.aggregate([
-                { $match: { status: 'delivered' } }, 
+                { 
+                    $match: { 
+                        $or: [
+                            { 'payment.paymentStatus': 'completed' },
+                            { status: 'delivered' }
+                        ]
+                    } 
+                },
                 { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
             ]);
             stats.financial = { totalRevenue: adminRevenueAggregation.length > 0 ? adminRevenueAggregation[0].totalRevenue : 0 };

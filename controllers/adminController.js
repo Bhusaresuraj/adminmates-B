@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const CompanyUser = require('../models/CompanyUser');
 const Branch = require('../models/Branch');
@@ -908,12 +909,17 @@ exports.getDashboardStats = async (req, res) => {
         };
 
         // ==================== REVENUE & FINANCIAL STATISTICS ====================
+        const baseRevenueMatch = {
+            $or: [
+                { 'payment.paymentStatus': 'completed' },
+                { status: 'delivered' }
+            ]
+        };
+
         // Calculate total revenue from completed payments
         const revenueAggregation = await Order.aggregate([
             { 
-                $match: { 
-                    'payment.paymentStatus': 'completed' 
-                } 
+                $match: baseRevenueMatch
             },
             {
                 $group: {
@@ -929,8 +935,8 @@ exports.getDashboardStats = async (req, res) => {
         const revenueToday = await Order.aggregate([
             { 
                 $match: { 
-                    'payment.paymentStatus': 'completed',
-                    'payment.paidAt': { $gte: startOfToday }
+                    ...baseRevenueMatch,
+                    createdAt: { $gte: startOfToday }
                 } 
             },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -939,8 +945,8 @@ exports.getDashboardStats = async (req, res) => {
         const revenueThisWeek = await Order.aggregate([
             { 
                 $match: { 
-                    'payment.paymentStatus': 'completed',
-                    'payment.paidAt': { $gte: startOfWeek }
+                    ...baseRevenueMatch,
+                    createdAt: { $gte: startOfWeek }
                 } 
             },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -949,8 +955,8 @@ exports.getDashboardStats = async (req, res) => {
         const revenueThisMonth = await Order.aggregate([
             { 
                 $match: { 
-                    'payment.paymentStatus': 'completed',
-                    'payment.paidAt': { $gte: startOfMonth }
+                    ...baseRevenueMatch,
+                    createdAt: { $gte: startOfMonth }
                 } 
             },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -959,8 +965,8 @@ exports.getDashboardStats = async (req, res) => {
         const revenueThisYear = await Order.aggregate([
             { 
                 $match: { 
-                    'payment.paymentStatus': 'completed',
-                    'payment.paidAt': { $gte: startOfYear }
+                    ...baseRevenueMatch,
+                    createdAt: { $gte: startOfYear }
                 } 
             },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -1047,7 +1053,7 @@ exports.getDashboardStats = async (req, res) => {
 
         // Top 5 companies by orders
         const topCompaniesByOrders = await Order.aggregate([
-            { $match: { 'payment.paymentStatus': 'completed' } },
+            { $match: baseRevenueMatch },
             { 
                 $group: { 
                     _id: '$company', 
@@ -1169,7 +1175,15 @@ exports.getAdminStoreStats = async (req, res) => {
         };
 
         const revenueAgg = await Order.aggregate([
-            { $match: { vendor: req.user._id, 'payment.paymentStatus': 'completed' } },
+            { 
+                $match: { 
+                    vendor: new mongoose.Types.ObjectId(adminId), 
+                    $or: [
+                        { 'payment.paymentStatus': 'completed' },
+                        { status: 'delivered' }
+                    ]
+                } 
+            },
             { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
         ]);
 
