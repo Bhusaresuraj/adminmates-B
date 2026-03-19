@@ -168,6 +168,10 @@ exports.createInvoice = async (req, res) => {
             // Non-critical error, continue
         }
 
+        // Mark the delivery challan as approved since the Admin has accepted it by creating an invoice
+        deliveryChallan.status = 'approved';
+        await deliveryChallan.save();
+
         // Populate invoice details
         await invoice.populate([
             { path: 'order', select: 'orderNumber status vendorApprovalStatus totalAmount' },

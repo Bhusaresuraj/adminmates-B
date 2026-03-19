@@ -178,7 +178,7 @@ exports.getVendorDeliveryChallans = async (req, res) => {
             vendor: req.user.id
         };
 
-        if (status && ['pending', 'delivered', 'cancelled'].includes(status)) {
+        if (status && ['pending', 'approved', 'invoiced', 'delivered', 'cancelled'].includes(status)) {
             filter.status = status;
         }
 
@@ -243,7 +243,7 @@ exports.getAllDeliveryChallans = async (req, res) => {
         // Build filter
         const filter = {};
 
-        if (status && ['pending', 'delivered', 'cancelled'].includes(status)) {
+        if (status && ['pending', 'approved', 'invoiced', 'delivered', 'cancelled'].includes(status)) {
             filter.status = status;
         }
 
