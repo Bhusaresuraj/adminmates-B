@@ -65,6 +65,13 @@ exports.createInvoice = async (req, res) => {
         // Check if delivery challan exists
         const deliveryChallan = await DeliveryChallan.findOne({ order: orderId });
 
+        if (!deliveryChallan) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invoice can only be created after a Delivery Challan has been generated.'
+            });
+        }
+
         // Prepare invoice items (without adding extra GST)
         const invoiceItems = [];
         let subtotal = 0;

@@ -97,8 +97,13 @@ exports.createProduct = async (req, res) => {
 
         // Allow Admin to provide a specific vendorId or leave blank for Admin-owned products
         let finalVendorId = req.user.id;
+        let isAutoApproved = false;
         if (['admin', 'super-admin', 'sub-admin'].includes(req.user.role)) {
             finalVendorId = req.body.vendorId || req.user.id;
+            // Auto-approve if the Admin is creating the product for their own direct store
+            if (finalVendorId === req.user.id) {
+                isAutoApproved = true;
+            }
         }
 
         // Create product
@@ -124,7 +129,9 @@ exports.createProduct = async (req, res) => {
             category: categoryId,
             subCategory: subCategoryId,
             status: 'active',
-            approvalStatus: 'pending'
+            approvalStatus: isAutoApproved ? 'approved' : 'pending',
+            approvedBy: isAutoApproved ? req.user.id : undefined,
+            approvedAt: isAutoApproved ? Date.now() : undefined
         });
 
         // Populate vendor and category details
@@ -289,14 +296,22 @@ exports.updateProduct = async (req, res) => {
             }
         }
 
-        // Reset approval status when product is updated
-        product.approvalStatus = 'pending';
-        product.approvedBy = undefined;
-        product.approvedAt = undefined;
-        product.rejectionReason = undefined;
-        product.adminCut = 0;
-        product.adminGst = 0;
-        product.adminGstAmount = 0;
+        // Reset approval status when product is updated by a vendor
+        if (!isAdmin) {
+            product.approvalStatus = 'pending';
+            product.approvedBy = undefined;
+            product.approvedAt = undefined;
+            product.rejectionReason = undefined;
+            product.adminCut = 0;
+            product.adminGst = 0;
+            product.adminGstAmount = 0;
+        } else if (product.approvalStatus === 'pending' || product.approvalStatus === 'rejected') {
+            // Auto-approve if admin explicitly updates a pending/rejected product
+            product.approvalStatus = 'approved';
+            product.approvedBy = req.user.id;
+            product.approvedAt = Date.now();
+            product.rejectionReason = undefined;
+        }
         
         // Recalculate GST amount and price (vendor price + GST)
         product.gstAmount = (product.vendorPrice * product.gstSlab) / 100;
