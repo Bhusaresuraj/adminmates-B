@@ -59,7 +59,7 @@ const deliveryChallanSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'delivered', 'cancelled'],
+        enum: ['pending', 'approved', 'invoiced', 'delivered', 'cancelled'],
         default: 'pending'
     }
 }, {
